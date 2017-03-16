@@ -20,6 +20,23 @@ public class AdaptiveBrightness extends TimerTask {
 
     public AdaptiveBrightness() {
         runtime = Runtime.getRuntime();
+        try {
+            Process process = runtime.exec("acpi -i");
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line = reader.readLine();
+            if (line != null) {
+                Pattern pattern = Pattern.compile("Battery\\s+\\d:\\s+(\\w+),\\s+(\\d+)%.*");
+                Matcher matcher = pattern.matcher(line);
+                if (matcher.find()) {
+                    String status = matcher.group(1);
+                    //TODO: use percentage
+                    String percentage = matcher.group(2);
+                    charging = status.equals("Charging") || status.equals("Unknown");
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public static void main(String[] args) {
@@ -41,7 +58,7 @@ public class AdaptiveBrightness extends TimerTask {
                     //TODO: use percentage
                     String percentage = matcher.group(2);
 
-                    if (status.equals("Charging") && !charging) {
+                    if ((status.equals("Charging") || status.equals("Unknown")) && !charging) {
                         runtime.exec("xbacklight -set 80");
                         charging = true;
                     }
